@@ -155,6 +155,43 @@ sob_before_cc:
  It true mb2q emits the committer SOB before Cc and Link tags. Otherwise at
  after all tags.
 
+Examples
+--------
+
+Analyze a mailbox named 'mbox' and store the resulting quilt series in the
+directory 'patches-mbox'. If the directory does not exit, it is created. If
+a series file exists in a already existing directory the patches are
+appended to the existing series. The file names for the patch files are
+generated from the subject line. If name conflicts occur, then a increasing
+version number is appended to the file name::
+
+  $ mb2q mbox
+  $ ls patches-mbox
+
+When the directory name is chosen, then leading path components are
+stripped off::
+
+  $ mb2q ~/mail/mbox
+  $ ls patches-mbox
+
+Same as above, but forces mb2q to use the directory 'patches' and not
+create one based on the name of the mailbox::
+
+  $ mb2q -p patches mbox
+  $ quilt series
+
+Analyze 'mbox' and store the result as a mailbox in 'obox'. The resulting
+mailbox has all the same tag collection and formatting features as the
+quilt version and can be directly applied with 'git-am'::
+
+  $ mb2q -o obox mbox
+  $ git-am obox
+
+Analyze mbox and add command line supplied acks and tested by to all
+patches in 'mbox'::
+
+  $ mb2q -a "Joe Hacker <jh@ack.er>, Acker Jon <ack@er.jon>' -t 'Mary Tester <mary@test.er>' mbox
+
 
 See also
 --------
