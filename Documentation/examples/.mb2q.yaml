@@ -1,0 +1,33 @@
+# mb2q configuration
+
+# The committer used for adding the SOB
+# If omitted it's retrieved from GIT or environment
+committer: Thomas Gleixner <tglx@linutronix.de>
+
+# List of mail addresses to drop from the CC list
+nocc_addrs:
+ - tglx@linutronix.de
+ - tglx@tglx.de
+
+# List of mailing list addresses for which the
+# Link: tag is generated
+list_addrs:
+ - linux-kernel@vger.kernel.org
+
+# List of 'From:' addresses which indicate that the message
+# in the mailbox is a mail client internal management mail
+# The example below is the magic mail alpine puts into mboxes
+# Can be abused to filter other things as well
+drop_from:
+ - '<MAILER-DAEMON@'
+
+# The Link: base address to which the message ID is appended
+link_base: https://lkml.kernel.org/r/
+
+# Drop Cc tags from the changelog. They are pointless
+# when a link is available. Default is True. Set to False
+# to keep them.
+dropcc: True
+
+# Emit committer SOB before Cc and Link tags.
+sob_before_cc: True
