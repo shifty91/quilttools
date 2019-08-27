@@ -9,6 +9,10 @@ nocc_addrs:
  - tglx@linutronix.de
  - tglx@tglx.de
 
+# List of Cc addresses which must be kept
+keepcc_addrs:
+ - stable@vger.kernel.org
+
 # List of mailing list addresses for which the
 # Link: tag is generated
 list_addrs:
@@ -29,5 +33,6 @@ link_base: https://lkml.kernel.org/r/
 # to keep them.
 dropcc: True
 
-# Emit committer SOB before Cc and Link tags.
+# Emit committer SOB next to the last SOB in the mail so
+# that the SOB chain is together
 sob_before_cc: True

@@ -88,6 +88,9 @@ Configuration options
       - nocc@email.addr
       - another.nocc@email.addr
 
+     keepcc_addrs:
+      - stable@vger.kernel.org
+
      list_addrs:
       - linux-kernel@vger.kernel.org
       - another-list@listserver.org
@@ -112,6 +115,13 @@ nocc_addrs:
 ^^^^^^^^^^^
 
   Mail addresses which are always dropped from the Cc list of a mail
+  independent of the dropcc config option and the '-C' command line
+  parameter
+
+keepcc_addrs:
+^^^^^^^^^^^^^
+
+  Mail addresses which are never dropped from the Cc list of a mail
   independent of the dropcc config option and the '-C' command line
   parameter
 

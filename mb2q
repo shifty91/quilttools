@@ -320,12 +320,15 @@ class patchmsg(object):
 
         # Drop all ccs if requested
         if key == 'Cc' and self.args.dropccs:
-            return
+            # Check whether is must be kept, e.g. stable@vger...
+            if get_raw_mailaddr(addr) not in self.args.keepcc_addrs:
+                return
 
         if key not in tag_nomail:
             ts = self.tags.get(key, mailaddrs())
         else:
             ts = self.tags.get(key, tagstore())
+
         ts.add(addr)
         self.tags[key] = ts
         self.has_tags = True
@@ -517,17 +520,19 @@ class quilter(object):
         # Drop extra newlines before tags
         res += pmsg.text.rstrip() + '\n\n'
 
+        last_tag = ''
         for tag in tag_order:
             # If SOB is empty warn
             if tag == 'Signed-off-by' and not tag in pmsg.tags:
                 sys.stderr.write('Patch %s has no SOB\n' %pmsg.subject)
 
-            # Write out the committer SOB before Cc, but not if the
-            # committer is the author and no other SOBs are behind his
-            # SOB
-            if self.args.sob_before_cc and tag == 'Cc' and self.needs_sob(pmsg):
-                res += 'Signed-off-by: %s\n' %self.args.committer
+            # Write out the committer SOB after the last SOB except when
+            # committer is the author and no other SOBs are behind his SOB
+            if self.args.sob_before_cc:
+                if last_tag == 'Signed-off-by' and self.needs_sob(pmsg):
+                    res += 'Signed-off-by: %s\n' %self.args.committer
 
+            last_tag = tag
             if not tag in pmsg.tags:
                 continue
 
@@ -624,6 +629,8 @@ if __name__ == '__main__':
     args.committer = cfg.get('committer', committer_from_git())
     # Cc's which should be dropped
     args.nocc_addrs = cfg.get('nocc_addrs', [])
+    # Cc's which must not be dropped
+    args.keepcc_addrs = cfg.get('keepcc_addrs', [stable@vger.kernel.org])
     # Mailing list addresses
     args.list_addrs = cfg.get('list_addrs', ['linux-kernel.@vger.kernel.org'])
     # Drop mails which originate from a mail clients management mail
