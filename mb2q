@@ -630,9 +630,9 @@ if __name__ == '__main__':
     # Cc's which should be dropped
     args.nocc_addrs = cfg.get('nocc_addrs', [])
     # Cc's which must not be dropped
-    args.keepcc_addrs = cfg.get('keepcc_addrs', [stable@vger.kernel.org])
+    args.keepcc_addrs = cfg.get('keepcc_addrs', ['stable@vger.kernel.org'])
     # Mailing list addresses
-    args.list_addrs = cfg.get('list_addrs', ['linux-kernel.@vger.kernel.org'])
+    args.list_addrs = cfg.get('list_addrs', ['linux-kernel@vger.kernel.org'])
     # Drop mails which originate from a mail clients management mail
     # usually the first mail in a mbox
     args.drop_from = cfg.get('drop_from', ['<MAILER-DAEMON@'])
