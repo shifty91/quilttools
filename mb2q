@@ -166,7 +166,9 @@ class mailaddrs(object):
         return self.addrs[self.order[0]]
 
     def get_last(self):
-        return self.addrs[self.order[-1]]
+        if len(self.order):
+            return self.addrs[self.order[-1]]
+        return None
 
     def remove(self, addr):
         raw = get_raw_mailaddr(addr)
@@ -493,6 +495,20 @@ class quilter(object):
             p.sanitize_ccs()
 
     def write_series(self, pdir):
+        # Prevent duplicates in the series. i.e. somebody sent a V3 in
+        # reply to V2 of 5/N. So the filename generated from the subject
+        # after stripping '[PATCH...]' is the same.
+
+        fnames = []
+        for pmsg in self.patches:
+            i = 0
+            fname = pmsg.fname
+            while fname in fnames:
+                i += 1
+                fname = pmsg.fname + '_%d' %i
+            pmsg.fname = fname
+            fnames.append(fname)
+
         # Write the series file
         with open(os.path.join(pdir, 'series'), 'a') as fd:
             for pmsg in self.patches:
