@@ -309,7 +309,14 @@ class patchmsg(object):
             if not text:
                 continue
 
-            text, patch = split_at_patch(text.decode())
+            try:
+                charset = part.get_content_charset('ascii')
+                text, patch = split_at_patch(text.decode(charset))
+            except:
+                err = 'Failed to decode body of Message-ID: %s\n' %self.msgid
+                sys.stderr.write(err)
+                return
+
             self.text += text
             if patch:
                 self.patch = patch
