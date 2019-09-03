@@ -359,21 +359,26 @@ class patchmsg(object):
         self.posttags = ''
         self.has_tags = False
         self.has_from_in_text = False
-        discard_seen = False
+        pos = 0
+        last_tagpos = 0
         for l in lines:
+            pos += 1
             if self.scan_tag(l):
+                last_tagpos = pos
                 continue
 
             # Drop quoted text, except when it's '>From'
-            if l.startswith('>') and l.find('From') < 0:
-                continue
+            if l.startswith('>'):
+                if l.find('From') < 0:
+                    continue
+                # Remove the quote
+                l = l[1:]
+
             # Respect a From: in the body and update author
             if l.startswith('From:'):
                 self.author = l.split(':')[1]
                 self.has_from_in_text = True
-            if l.strip() == '---' :
-                discard_seen = True
-            if discard_seen:
+            if last_tagpos and pos >= last_tagpos:
                 self.posttags += l + '\n'
             else:
                 self.text += l + '\n'
