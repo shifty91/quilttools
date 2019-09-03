@@ -33,6 +33,7 @@ re_split_at_patch = [
     re.compile('\ndiff --git a/.* b/.*\n'),
     re.compile('\n--- a/.*\n'),
     re.compile('\n--- dev/null.*\n'),
+    re.compile('\n--- .*/.*\n'),
 ]
 
 def split_at_patch(text):
