@@ -650,7 +650,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
-        cfg = yaml.load(open(os.path.expanduser(args.config)))
+        cfg = yaml.load(open(os.path.expanduser(args.config)), Loader=yaml.FullLoader)
     except:
         cfg = {}
 
