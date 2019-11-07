@@ -500,7 +500,7 @@ class quilter(object):
         # Update patches which reference a cover letter
         for c in cover:
             for p in self.patches:
-                if o.msgid == p.inreplyto or o.msgid in p.references:
+                if c.msgid == p.inreplyto or c.msgid in p.references:
                     p.update_tags(c)
 
         # Sanitize Ccs:
