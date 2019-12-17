@@ -3,13 +3,17 @@
 # Copyright Thomas Gleixner <tglx@linutronix.de>
 
 from email.utils import make_msgid, formatdate
+from email import message_from_binary_file
+from email.policy import EmailPolicy
 from argparse import ArgumentParser
+from importlib import import_module
 import subprocess
 import mailbox
 import email.policy
 import email
 import yaml
 import time
+import copy
 import sys
 import os
 import re
@@ -450,7 +454,7 @@ class quilter(object):
         self.others = []
 
         # Initial scan to gather information
-        for k, msg in mbox.iteritems():
+        for k, msg in mbox.items():
 
             if self.should_drop(msg):
                 continue
@@ -607,11 +611,65 @@ class quilter(object):
             mbox.add(mailbox.mboxMessage(msg))
         mbox.close()
 
+class nm_mbox(object):
+    def __init__(self, tag):
+        try:
+            notmuch = import_module('notmuch')
+        except ImportError:
+            sys.stderr.write('Notmuch module not found. Support disabled\n')
+            sys.exit(1)
+
+        self.db = notmuch.Database(mode=notmuch.Database.MODE.READ_WRITE)
+        self.msgs = []
+
+        try:
+            prefix, realtag = tag.split(':')
+            self.realtag = realtag.strip()
+            if not len(self.realtag):
+                raise Exception
+        except:
+            sys.stderr.write('Invalid notmuch tag: %s\n' %tag)
+            sys.exit(1)
+
+        policy = EmailPolicy(utf8=True)
+        try:
+            self.db.begin_atomic()
+            q = notmuch.Query(self.db, tag)
+            for nmmsg in q.search_messages():
+                mid = nmmsg.get_message_id()
+                try:
+                    fpath = nmmsg.get_filename()
+                    with open(fpath, 'rb') as f:
+                        msg = message_from_binary_file(f, policy=policy)
+                except:
+                    sys.stderr.write('Failed to read %s (%s)\n' %(fpath, mid))
+                    raise
+
+                self.msgs.append((mid, msg))
+                nmmsg.remove_tag(realtag)
+
+        except notmuch.NotmuchError as ex:
+            self.db.end_atomic()
+            sys.stderr.write('%s\nCheck your tag expression\n' %repr(ex))
+            sys.exit(1)
+
+        except Exception as ex:
+            self.db.end_atomic()
+            sys.stderr.write('%s\n' %repr(ex))
+            sys.exit(1)
+
+        self.db.end_atomic()
+
+    def items(self):
+        return copy.copy(self.msgs)
+
 if __name__ == '__main__':
 
     parser = ArgumentParser(description='Mailbox 2 quilt converter')
     parser.add_argument('inbox', metavar='inbox',
-                        help='Input mbox file or maildir directory')
+                        help='''
+                        Input mbox file or maildir directory or notmuch tag.
+                        notmuch tag format is tag:$TAGNAME''')
     parser.add_argument('-c', '--config', dest='config', default='~/.mb2q.yaml',
                         help='Config file. Default: ~/.mb2q.yaml')
     parser.add_argument('-d', '--droplinks', dest='droplinks',
@@ -677,12 +735,16 @@ if __name__ == '__main__':
 
     q = quilter(args)
 
-    if os.path.isfile(args.inbox):
-        patchsuffix = args.inbox
+    patchsuffix = args.inbox
+    if args.inbox.startswith('tag:'):
+        mbox = nm_mbox(args.inbox)
+        patchsuffix = 'notmuch_%s' %args.inbox.replace(':', '_')
+    elif os.path.isfile(args.inbox):
+        mbox = mailbox.mbox(args.inbox, create=False)
     elif os.path.isdir(args.inbox):
         mbox = mailbox.Maildir(args.inbox, create=False)
     else:
-        sys.stderr.write('Invalid input source %s\n' %args.inbox)
+        sys.stderr.write('Unknown input source %s\n' %args.inbox)
         sys.exit(1)
 
     try:
@@ -695,7 +757,7 @@ if __name__ == '__main__':
          sys.exit(1)
 
     if not len(q.patches):
-        sys.stderr.write("No patches found in mbox\n")
+        sys.stderr.write("No patches found in input\n")
         sys.exit(1)
 
     if args.mboxout:
@@ -705,7 +767,7 @@ if __name__ == '__main__':
         if args.patchesdir:
             pdir = os.path.expanduser(args.patchesdir)
         else:
-            pdir = 'patches-%s' % os.path.basename(args.inbox)
+            pdir = 'patches-%s' % os.path.basename(patchsuffix)
         if not os.path.isdir(pdir):
             os.makedirs(pdir)
         q.write_series(pdir)
