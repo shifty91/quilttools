@@ -610,7 +610,8 @@ class quilter(object):
 if __name__ == '__main__':
 
     parser = ArgumentParser(description='Mailbox 2 quilt converter')
-    parser.add_argument('inbox', metavar='inbox', help='Input mbox file')
+    parser.add_argument('inbox', metavar='inbox',
+                        help='Input mbox file or maildir directory')
     parser.add_argument('-c', '--config', dest='config', default='~/.mb2q.yaml',
                         help='Config file. Default: ~/.mb2q.yaml')
     parser.add_argument('-d', '--droplinks', dest='droplinks',
@@ -666,7 +667,7 @@ if __name__ == '__main__':
     # usually the first mail in a mbox
     args.drop_from = cfg.get('drop_from', ['<MAILER-DAEMON@'])
     # The base address for generating Link://
-    args.linkbase = cfg.get('link_base', 'https://lkml.kernel.org/r/')
+    args.linkbase = cfg.get('link_base', 'https://lore.kernel.org/r/')
     # Drop all ccs?
     args.dropccs = cfg.get('dropccs', True)
     # Committer SOB before Cc and Link
@@ -675,8 +676,23 @@ if __name__ == '__main__':
     compile_tags()
 
     q = quilter(args)
-    mbox = mailbox.mbox(args.inbox, create=False)
-    q.scan_mbox(mbox)
+
+    if os.path.isfile(args.inbox):
+        patchsuffix = args.inbox
+    elif os.path.isdir(args.inbox):
+        mbox = mailbox.Maildir(args.inbox, create=False)
+    else:
+        sys.stderr.write('Invalid input source %s\n' %args.inbox)
+        sys.exit(1)
+
+    try:
+        q.scan_mbox(mbox)
+    except FileNotFoundError as ex:
+         sys.stderr.write('inbox %s is not valid. %s\n' %(args.inbox, ex))
+         sys.exit(1)
+    except Exception as ex:
+         sys.stderr.write('%s\n' %ex)
+         sys.exit(1)
 
     if not len(q.patches):
         sys.stderr.write("No patches found in mbox\n")
