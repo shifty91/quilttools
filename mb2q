@@ -645,7 +645,12 @@ class nm_mbox(object):
                     sys.stderr.write('Failed to read %s (%s)\n' %(fpath, mid))
                     raise
 
-                self.msgs.append((mid, msg))
+                # The message iterator is in reverse order
+                # except for the first mail in the thread
+                if len(self.msgs) > 0:
+                    self.msgs.insert(1, (mid, msg))
+                else:
+                    self.msgs.append((mid, msg))
                 nmmsg.remove_tag(realtag)
 
         except notmuch.NotmuchError as ex:
