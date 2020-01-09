@@ -712,7 +712,7 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--CollectCC', dest='collectcc',
                         action='store_true',
                         help='Collect all CCs from mail header')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.2')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.3')
     args = parser.parse_args()
 
     try:
