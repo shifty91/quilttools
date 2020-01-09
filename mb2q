@@ -209,6 +209,7 @@ tag_order = [
     'Suggested-by',
     'Originally-from',
     'Originally-by',
+    'Co-developed-by',
     'Signed-off-by',
     'Tested-by',
     'Reviewed-by',
