@@ -22,3 +22,8 @@ series
 
 # Sphinx
 Documentation/output/
+
+# Setup odds and ends
+*.egg-info/
+build/
+dist/
