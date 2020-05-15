@@ -7,6 +7,7 @@ from email import message_from_binary_file
 from email.policy import EmailPolicy
 from argparse import ArgumentParser
 from importlib import import_module
+from quilttoolsversion import QUILTTOOLSVERSION as version
 import subprocess
 import mailbox
 import email.policy
@@ -670,7 +671,6 @@ class nm_mbox(object):
         return copy.copy(self.msgs)
 
 if __name__ == '__main__':
-
     parser = ArgumentParser(description='Mailbox 2 quilt converter')
     parser.add_argument('inbox', metavar='inbox',
                         help='''
@@ -712,7 +712,8 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--CollectCC', dest='collectcc',
                         action='store_true',
                         help='Collect all CCs from mail header')
-    parser.add_argument('--version', action='version', version='%(prog)s 0.3')
+    parser.add_argument('--version', action='version',
+                        version='%%(prog)s %s'%version)
     args = parser.parse_args()
 
     try:
