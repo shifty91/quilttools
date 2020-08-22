@@ -213,6 +213,7 @@ tag_order = [
     'Originally-by',
     'Co-developed-by',
     'Signed-off-by',
+    'Reviewed-and-tested-by',
     'Tested-by',
     'Reviewed-by',
     'Acked-by',
@@ -361,6 +362,9 @@ class patchmsg(object):
                 addr = txt[pos + 1:].strip()
                 if tag == 'Reported-and-tested-by':
                     self.add_tag('Reported-by', addr)
+                    tag = 'Tested-by'
+                if tag == 'Reviewed-and-tested-by':
+                    self.add_tag('Reviewed-by', addr)
                     tag = 'Tested-by'
                 self.add_tag(tag, addr)
                 return True
