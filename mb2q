@@ -355,7 +355,7 @@ class patchmsg(object):
                 return
 
         # Drop all ccs if requested
-        if key == 'Cc' and self.args.dropccs:
+        if key == 'Cc' and self.args.dropccs and not self.args.keepcc:
             # Check whether is must be kept, e.g. stable@vger...
             if get_raw_mailaddr(addr) not in self.args.keepcc_addrs:
                 return
@@ -732,6 +732,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--testedby', dest='testedby', type=str,
                         default='',
                         help='Add Tested-by to all patches')
+    parser.add_argument('-K', '--KeepCC', dest='keepcc',
+                        action='store_true',
+                        help='Keep CCs from mail body')
     parser.add_argument('-C', '--CollectCC', dest='collectcc',
                         action='store_true',
                         help='Collect all CCs from mail header')
