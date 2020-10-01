@@ -288,8 +288,14 @@ class patchmsg(object):
     def get_addrs(self, msg):
         self.author = decode_from(msg)
         # Get To and Cc
-        ccs = decode_addrs(str(msg['To']), drop = self.args.nocc_addrs)
-        ccs.extend(decode_addrs(str(msg['Cc']), drop = self.args.nocc_addrs))
+        try:
+            ccs = decode_addrs(str(msg['To']), drop = self.args.nocc_addrs)
+        except:
+            ccs = mailaddrs()
+        try:
+            ccs.extend(decode_addrs(str(msg['Cc']), drop = self.args.nocc_addrs))
+        except:
+            pass
 
         # Check whether the cc list contains a list address match
         self.listmatch = ccs.contains(self.args.list_addrs)
