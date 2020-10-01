@@ -263,7 +263,10 @@ class patchmsg(object):
             return
         # Remove starting brackets stuff
         while subj.startswith('['):
-            subj = self.re_rmsquare.sub('', subj, count=1)
+            if subj.find(']') > 0:
+                subj = self.re_rmsquare.sub('', subj, count=1)
+            else:
+                subj = subj[1:]
         subj = subj.replace('\n', ' ')
         re_compress_space.sub(' ', subj)
 
