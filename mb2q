@@ -207,6 +207,7 @@ tag_order = [
     'Fixes',
     'Reported-and-tested-by',
     'Reported-by',
+    'Debugged-by',
     'Suggested-by',
     'Originally-from',
     'Originally-by',
