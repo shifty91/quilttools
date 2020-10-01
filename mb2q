@@ -3,7 +3,7 @@
 # Copyright Thomas Gleixner <tglx@linutronix.de>
 
 from email.utils import make_msgid, formatdate
-from email import message_from_binary_file
+from email import message_from_binary_file, message_from_bytes
 from email.policy import EmailPolicy
 from argparse import ArgumentParser
 from importlib import import_module
@@ -693,6 +693,80 @@ class nm_mbox(object):
     def items(self):
         return copy.copy(self.msgs)
 
+def valid_unixfrom(bline):
+    try:
+        line = bline.decode()
+        if not line.startswith('From '):
+            return False
+
+        # unixfrom lines have the format
+        # From $Address $Datetime
+        # $Datetime is in ctime() format
+        frm, addr, datestr = line.split(' ', 2)
+        ctime = time.strptime(datestr.strip())
+        return True
+    except:
+        return False
+
+def empty_line(bline):
+    try:
+        line = bline.decode().strip()
+        return len(line) == 0
+    except:
+        return false
+
+#
+# mailbox.mbox trips over lines in the mail body which start with 'From '
+# Work around that by reading the mailbox file in binary format and
+# searching for unixfrom headers.
+#
+# This is sloppy and incomplete but should cover the most obvious cases
+# for mails on LKML etc. It's unlikely that the mail body contains a valid
+# unixfrom preceeded by an empty newline.
+#
+class solid_mbox(object):
+    def __init__(self, fpath):
+        self.msgs = []
+
+        bmsg = bytes(0)
+        prev_empty = True
+        for bline in open(fpath, 'rb').readlines():
+            # Unixfrom lines must be either at the start of
+            # the file or preceeded by an empty new line
+            if empty_line(bline):
+                prev_empty = True
+                bmsg += bline
+                continue
+
+            if not valid_unixfrom(bline):
+                prev_empty = False
+                bmsg += bline
+                continue
+
+            # If the previous line was not empty, ignore it
+            if not prev_empty:
+                bmsg += bline
+                continue
+
+            self._add_msg(bmsg)
+            bmsg = bytes(0)
+
+        # Handle the last msg
+        self._add_msg(bmsg)
+
+    def _add_msg(self, bmsg):
+        # First message trips over this obviously
+        if len(bmsg) == 0:
+            return
+
+        policy = EmailPolicy(utf8=True)
+        msg = message_from_bytes(bmsg, policy=policy)
+        msgid = msg.get('Message-ID', None)
+        self.msgs.append((msgid, msg))
+
+    def items(self):
+        return copy.copy(self.msgs)
+
 if __name__ == '__main__':
     parser = ArgumentParser(description='Mailbox 2 quilt converter')
     parser.add_argument('inbox', metavar='inbox',
@@ -774,7 +848,7 @@ if __name__ == '__main__':
         mbox = nm_mbox(args.inbox)
         patchsuffix = 'notmuch_%s' %args.inbox.replace(':', '_')
     elif os.path.isfile(args.inbox):
-        mbox = mailbox.mbox(args.inbox, create=False)
+        mbox = solid_mbox(args.inbox)
     elif os.path.isdir(args.inbox):
         mbox = mailbox.Maildir(args.inbox, create=False)
     else:
