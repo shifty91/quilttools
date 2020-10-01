@@ -283,10 +283,19 @@ class patchmsg(object):
         # Create a filename just in case
         self.fname = self.re_tofname.sub('_', self.subject)
 
+    def build_references(msg, hdr):
+        refs = []
+        for r in msg.get(hdr, '').split():
+            refs.append(r.strip())
+        return refs
+
     def get_references(self, msg):
-        self.references = msg.get('References', '').split()
-        self.inreplyto = msg.get('In-Reply-To', '').split()
-        self.msgid = msg.get('Message-ID', None)
+        self.references = patchmsg.build_references(msg, 'References')
+        self.inreplyto = patchmsg.build_references(msg, 'In-Reply-To')
+        msgid = msg.get('Message-ID', None)
+        if msgid:
+            msgid = msgid.strip()
+        self.msgid = msgid
 
     def get_addrs(self, msg):
         self.author = decode_from(msg)
