@@ -660,6 +660,7 @@ class nm_mbox(object):
         try:
             self.db.begin_atomic()
             q = notmuch.Query(self.db, tag)
+            q.set_sort(notmuch.Query.SORT.OLDEST_FIRST)
             for nmmsg in q.search_messages():
                 mid = nmmsg.get_message_id()
                 try:
@@ -670,12 +671,7 @@ class nm_mbox(object):
                     sys.stderr.write('Failed to read %s (%s)\n' %(fpath, mid))
                     raise
 
-                # The message iterator is in reverse order
-                # except for the first mail in the thread
-                if len(self.msgs) > 0:
-                    self.msgs.insert(1, (mid, msg))
-                else:
-                    self.msgs.append((mid, msg))
+                self.msgs.append((mid, msg))
                 nmmsg.remove_tag(realtag)
 
         except notmuch.NotmuchError as ex:
