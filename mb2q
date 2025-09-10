@@ -791,6 +791,8 @@ if __name__ == '__main__':
     parser.add_argument('-F', '--fromnodup', dest='fromnodup',
                         action='store_true',
                         help='Do not duplicate From into the body')
+    parser.add_argument('-l', '--list', dest='list',
+                        help='Additional list address')
     parser.add_argument('-m', '--mboxout', dest='mboxout',
                         help='Store result in mailbox and do not quilt')
     parser.add_argument('-n', '--nolink', dest='nolink',
@@ -841,6 +843,8 @@ if __name__ == '__main__':
     args.keepcc_addrs = cfg.get('keepcc_addrs', ['stable@vger.kernel.org'])
     # Mailing list addresses
     args.list_addrs = cfg.get('list_addrs', ['linux-kernel@vger.kernel.org'])
+    if args.list and not args.list in args.list_addrs:
+        args.list_addrs.append(args.list)
     # Drop mails which originate from a mail clients management mail
     # usually the first mail in a mbox
     args.drop_from = cfg.get('drop_from', ['<MAILER-DAEMON@'])
