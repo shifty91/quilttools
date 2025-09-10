@@ -1,0 +1,15 @@
+#!/bin/bash
+
+quilt top >/dev/null && { echo "quilt patches still applied!"; exit -1; }
+
+git reset --hard
+
+for P in `quilt series`
+do
+	git am patches/$P || { echo "Failed to apply " $P; exit -1; }
+
+	LINK=`grep SubmissionLink patches/$P`
+	[ -z "$LINK" ] && continue
+
+	git notes add -m "$LINK" || { echo "Failed to create note " $P; exit -1; }
+done
