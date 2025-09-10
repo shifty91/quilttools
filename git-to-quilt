@@ -1,0 +1,164 @@
+#!/usr/bin/python3
+
+from __future__ import print_function
+
+from __future__ import unicode_literals
+from argparse import ArgumentParser
+from datetime import tzinfo, timedelta, datetime
+from pygit2 import Repository, Signature
+from pygit2 import GIT_SORT_TOPOLOGICAL, GIT_SORT_TIME
+import pygit2
+import string
+import sys
+import os
+
+# Generate a valid filename out of the subject line
+def subject_to_filename(subj):
+    subj = subj.replace('/', '_')
+    subj = subj.replace(':', '_')
+    valid = "-_. %s%s" % (string.ascii_letters, string.digits)
+    fn = ''.join(c for c in subj if c in valid)
+    return fn.replace(' ','_')
+
+class FixedOffset(tzinfo):
+    """Fixed offset in minutes east from UTC."""
+
+    def __init__(self, offset):
+        self.__offset = timedelta(minutes = offset)
+
+    def utcoffset(self, dt):
+        return self.__offset
+
+    def tzname(self, dt):
+        return None # we don't know the time zone's name
+
+    def dst(self, dt):
+        return timedelta(0) # we don't know about DST
+
+class commit(object):
+    def __init__(self, repo, c):
+        self.commit = c
+        try:
+            self.note = repo.lookup_note(str(c.id))
+        except Exception as ex:
+            self.note = None
+
+if __name__ == '__main__':
+    parser = ArgumentParser(description='Export git commits to quilt')
+    parser.add_argument('baseref', help='Base ref from which to export')
+    parser.add_argument('-d', '--nodate', action='store_true',
+                        help='Omit date')
+    parser.add_argument('-N', '--nosob', action='store_true',
+                        help='Do not add Signed-off-by')
+    parser.add_argument('-p', '--patchesdir', dest='patchesdir',
+                        default='patches',
+                        help='Use given directory instead of patches')
+    parser.add_argument('-R', '--reverse', action='store_true',
+                        help='Create reverse diffs')
+    parser.add_argument('-u', '--upstreamrefs', action='store_true',
+                        help='Add upstream references')
+    args = parser.parse_args()
+
+    repo = Repository('.')
+
+    # Get the user name
+    sig = Signature(repo.config['user.name'], repo.config['user.email'])
+
+    # Resolve the base ref
+    try:
+        baseref = repo.resolve_refish(args.baseref)[0]
+    except:
+        print('Unknown base ref: %s' %args.baseref)
+        sys.exit(1)
+
+    # Make sure the directory exists
+    os.makedirs(args.patchesdir, exist_ok=True)
+
+    commits = []
+    # Collect the commits
+    c = repo.head.peel(pygit2.Commit)
+    while c.id != baseref.id:
+        print('Export %s %s' %(str(c.id)[:12], c.message.split('\n', 1)[0]))
+        if args.reverse:
+            commits.append(commit(repo, c))
+        else:
+            commits.insert(0, commit(repo, c))
+        c = c.parents[0]
+
+    series = []
+    for c in commits:
+
+        subject, lines = c.commit.message.split('\n', 1)
+        fname = str(c.commit.id)[:12] + '_' + subject_to_filename(subject)
+
+        if not args.reverse:
+            subject = "Subject: {}\n".format(subject)
+        else:
+            subject = "Subject: Revert: {}\n".format(subject)
+        author = "From: {} <{}>\n".format(c.commit.author.name,
+                                          c.commit.author.email)
+        tzinfo = FixedOffset(c.commit.author.offset)
+        dt = datetime.fromtimestamp(float(c.commit.author.time), tzinfo)
+        date = "Date: {}\n".format(dt.strftime('%c %z'))
+
+        # Avoid overwriting existing patches
+        path = os.path.join(args.patchesdir, fname) + '.patch'
+        i = 0
+        while os.path.isfile(path):
+            i += 1
+            path = os.path.join(args.patchesdir, fname) + '-%d.patch' %i
+
+        with open(path, 'wb') as fp:
+            fp.write(subject.encode('utf-8'))
+            fp.write(author.encode('utf-8'))
+            if not args.nodate:
+                fp.write(date.encode('utf-8'))
+
+            fp.write('\n'.encode('utf-8'))
+
+            # Repeat author
+            fp.write(author.encode('utf-8'))
+
+            if args.upstreamrefs:
+                txt = "commit %s upstream\n\n" %commit.id.hex
+                fp.write(txt.encode('utf-8'))
+
+            csig = c.commit.committer
+            same_committer = csig.name == sig.name and csig.email == csig.email
+
+            if args.nosob or same_committer:
+                msg = lines
+            else:
+                # Find the last S-o-B
+                pos = lines.rfind('Signed-off-by:')
+                msg = lines[:pos]
+                parts = lines[pos:].split('\n', 1)
+                msg += '%s\n' %parts.pop(0)
+                msg += 'Signed-off-by: %s <%s>\n' %(sig.name, sig.email)
+                for p in parts:
+                    msg += '%s\n' %p
+
+            msg = msg.rstrip('\n')
+            fp.write(msg.encode('utf-8'))
+            fp.write('\n---\n'.encode('utf-8'))
+
+            if c.note:
+                fp.write(c.note.message.encode('utf-8'))
+                fp.write('---\n'.encode('utf-8'))
+
+            if not args.reverse:
+                diff = repo.diff(c.commit.parents[0], c.commit)
+            else:
+                diff = repo.diff(c.commit, c.commit.parents[0])
+            ds = diff.stats.format(format=pygit2.GIT_DIFF_STATS_FULL |
+                                   pygit2.GIT_DIFF_STATS_INCLUDE_SUMMARY,
+                                   width=80)
+            fp.write(ds.encode('utf-8'))
+            fp.write('---\n'.encode('utf-8'))
+            fp.write(diff.patch.encode('utf-8'))
+
+        series.append(path.rsplit('/', 1)[1])
+
+    with open(os.path.join(args.patchesdir, 'series'), 'a') as fd:
+        for p in series:
+            fd.write("{}\n".format(p))
