@@ -259,9 +259,11 @@ class patchmsg(object):
 
     def decode_subject(self, msg):
         subj = msg.get('Subject')
+        subject = subj
         if not subj:
             return
         # Remove starting brackets stuff
+        subj = subj.lstrip()
         while subj.startswith('['):
             if subj.find(']') > 0:
                 subj = self.re_rmsquare.sub('', subj, count=1)
@@ -270,18 +272,28 @@ class patchmsg(object):
         subj = subj.replace('\n', ' ')
         re_compress_space.sub(' ', subj)
 
-        # Try to automatically uppercase the start of the sentence
+        # Try to automatically uppercase the start of the sentence.
+        #
         # This assumes that the prefix(es) end with a colon and the
-        # sentence afterwards does not contain one.
+        # sentence afterwards does not contain one, with the exception of
+        # struct::member references to make things more interesting
+        try:
+            subj, trailer = subj.split('::', 1)
+        except:
+            trailer = None
+
+        # Use rfind to support foo: bar: baz: prefixes !@%!$@!
         spos = subj.rfind(':') + 1
         if spos > 0 and spos < len(subj):
             prefix = subj[:spos]
             tail = subj[spos:].strip()
             subj = prefix + ' ' + tail[0].capitalize() + tail[1:]
+        if trailer:
+            subj += '::%s' %trailer
 
         self.subject = subj.strip()
         # Create a filename just in case
-        self.fname = self.re_tofname.sub('_', self.subject)
+        self.fname = self.re_tofname.sub('_', subject.strip())
 
     def build_references(msg, hdr):
         refs = []
