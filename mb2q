@@ -251,6 +251,7 @@ class patchmsg(object):
     def __init__(self, msg, args):
         self.args = args
         self.tags = {}
+        self.submit_link = None
 
         self.date = msg.get('Date', formatdate())
         self.decode_subject(msg)
@@ -383,6 +384,12 @@ class patchmsg(object):
         self.tags[key] = ts
         self.has_tags = True
 
+    def add_link(self, msgid):
+        if self.args.detachlink:
+            self.submit_link = self.args.linkbase + msgid
+        else:
+            self.add_tag('Link', self.args.linkbase + msgid, force = True)
+
     def scan_tag(self, txt):
         i = 0
         txt = txt.strip()
@@ -509,7 +516,7 @@ class quilter(object):
                 pmsg.update_tags(self)
                 if pmsg.msgid and pmsg.listmatch and not self.args.nolink:
                     mid = pmsg.msgid.lstrip('<').rstrip('>')
-                    pmsg.add_tag('Link', self.args.linkbase + mid, force = True)
+                    pmsg.add_link(mid)
                 self.patches.append(pmsg)
             elif pmsg.has_tags:
                 self.replies.append(pmsg)
@@ -615,6 +622,9 @@ class quilter(object):
                 res += 'Signed-off-by: %s\n' %self.args.committer
 
         res += '\n'
+
+        if pmsg.submit_link:
+            res += '---\nSubmissionLink: %s\n' %pmsg.submit_link
         res += pmsg.posttags
         res += '\n'
         res += pmsg.patch
@@ -788,6 +798,9 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--droplinks', dest='droplinks',
                         action='store_true',
                         help='Drop existing Link:// tags in patches')
+    parser.add_argument('-D', '--detachlink', dest='detachlink',
+                        action='store_true',
+                        help='Detach the submission mail link from the tags')
     parser.add_argument('-F', '--fromnodup', dest='fromnodup',
                         action='store_true',
                         help='Do not duplicate From into the body')
