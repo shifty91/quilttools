@@ -820,6 +820,8 @@ if __name__ == '__main__':
     parser.add_argument('-C', '--CollectCC', dest='collectcc',
                         action='store_true',
                         help='Collect all CCs from mail header')
+    parser.add_argument('--storeonly', action='store_true',
+                        help='Store mails without analysing them')
     parser.add_argument('--version', action='version',
                         version='%%(prog)s %s'%version)
     args = parser.parse_args()
@@ -861,6 +863,13 @@ if __name__ == '__main__':
         mbox = mailbox.Maildir(args.inbox, create=False)
     else:
         sys.stderr.write('Unknown input source %s\n' %args.inbox)
+        sys.exit(1)
+
+    if args.storeonly:
+        obox = mailbox.mbox(args.mboxout, create = True)
+        for k, msg in mbox.items():
+            obox.add(mailbox.mboxMessage(msg))
+        obox.close()
         sys.exit(1)
 
     try:
