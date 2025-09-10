@@ -219,11 +219,13 @@ tag_order = [
     'Acked-by',
     'Cc',
     'Link',
+    'Closes',
 ]
 
 tag_nomail = [
     'Fixes',
     'Link',
+    'Closes',
 ]
 
 tags_reply = [
