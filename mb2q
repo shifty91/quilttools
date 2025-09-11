@@ -862,7 +862,7 @@ if __name__ == '__main__':
     # usually the first mail in a mbox
     args.drop_from = cfg.get('drop_from', ['<MAILER-DAEMON@'])
     # The base address for generating Link://
-    args.linkbase = cfg.get('link_base', 'https://lore.kernel.org/all/')
+    args.linkbase = cfg.get('link_base', 'https://lore.kernel.org/')
     # Drop all ccs?
     args.dropccs = cfg.get('dropccs', True)
     # Committer SOB before Cc and Link
