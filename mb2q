@@ -360,7 +360,7 @@ class patchmsg(object):
 
             self.text += text
             if patch:
-                self.patch = patch
+                self.patch = patch.lstrip('\n')
 
     def add_tag(self, key, addr, force=False):
 
@@ -625,7 +625,7 @@ class quilter(object):
 
         if pmsg.submit_link:
             res += '---\nSubmissionLink: %s\n' %pmsg.submit_link
-        res += pmsg.posttags
+        res += pmsg.posttags.lstrip('\n').rstrip('\n')
         res += '\n'
         res += pmsg.patch
         return res
