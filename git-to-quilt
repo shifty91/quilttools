@@ -120,7 +120,7 @@ if __name__ == '__main__':
             fp.write(author.encode('utf-8'))
 
             if args.upstreamrefs:
-                txt = "commit %s upstream\n\n" %commit.id.hex
+                txt = "\ncommit %s upstream.\n" %c.commit.id.hex
                 fp.write(txt.encode('utf-8'))
 
             csig = c.commit.committer
