@@ -63,7 +63,7 @@ def get_raw_mailaddr(addr):
     except:
         return addr
 
-re_compress_space = re.compile('\s+')
+re_compress_space = re.compile(r'\s+')
 
 def decode_hdr(hdr):
     '''
@@ -109,7 +109,7 @@ def decode_from(msg):
     addrs = decode_addrs(str(msg['From']))
     return addrs.get_first()
 
-re_noquote = re.compile('[a-zA-Z0-9_\- ]+')
+re_noquote = re.compile(r'[a-zA-Z0-9_\- ]+')
 
 def encode_hdr(txt):
     try:
@@ -245,7 +245,7 @@ class patchmsg(object):
     Internal representation of a patch message.
     '''
 
-    re_rmsquare = re.compile('^\[.*?\]')
+    re_rmsquare = re.compile(r'^\[.*?\]')
     re_tofname = re.compile('[^0-9a-zA-Z]+')
 
     def __init__(self, msg, args):
