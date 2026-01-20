@@ -663,7 +663,7 @@ class quilter(object):
 class nm_mbox(object):
     def __init__(self, tag):
         try:
-            notmuch = import_module('notmuch')
+            notmuch = import_module('notmuch2')
         except ImportError:
             sys.stderr.write('Notmuch module not found. Support disabled\n')
             sys.exit(1)
@@ -682,33 +682,27 @@ class nm_mbox(object):
 
         policy = EmailPolicy(utf8=True)
         try:
-            self.db.begin_atomic()
-            q = notmuch.Query(self.db, tag)
-            q.set_sort(notmuch.Query.SORT.OLDEST_FIRST)
-            for nmmsg in q.search_messages():
-                mid = nmmsg.get_message_id()
-                try:
-                    fpath = nmmsg.get_filename()
-                    with open(fpath, 'rb') as f:
-                        msg = message_from_binary_file(f, policy=policy)
-                except:
-                    sys.stderr.write('Failed to read %s (%s)\n' %(fpath, mid))
-                    raise
+            with self.db.atomic():
+                for nmmsg in self.db.messages(tag, sort=notmuch.Database.SORT.OLDEST_FIRST):
+                    mid = nmmsg.messageid
+                    try:
+                        fpath = nmmsg.path
+                        with open(fpath, 'rb') as f:
+                            msg = message_from_binary_file(f, policy=policy)
+                    except:
+                        sys.stderr.write('Failed to read %s (%s)\n' %(fpath, mid))
+                        raise
 
-                self.msgs.append((mid, msg))
-                nmmsg.remove_tag(realtag)
+                    self.msgs.append((mid, msg))
+                    nmmsg.tags.remove(realtag)
 
         except notmuch.NotmuchError as ex:
-            self.db.end_atomic()
             sys.stderr.write('%s\nCheck your tag expression\n' %repr(ex))
             sys.exit(1)
 
         except Exception as ex:
-            self.db.end_atomic()
             sys.stderr.write('%s\n' %repr(ex))
             sys.exit(1)
-
-        self.db.end_atomic()
 
     def items(self):
         return copy.copy(self.msgs)
